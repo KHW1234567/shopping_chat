@@ -47,6 +47,7 @@ export default function Home() {
   
   // Settings view states (editable inputs initialized with defaults)
   const [pineconeKey, setPineconeKey] = useState<string>("");
+  const [openaiApiKey, setOpenaiApiKey] = useState<string>("");
   const [showApiKey, setShowApiKey] = useState<boolean>(false);
   const [selectedModel, setSelectedModel] = useState<string>("gemini-pro");
   const [systemPrompt, setSystemPrompt] = useState<string>(
@@ -88,9 +89,15 @@ export default function Home() {
     }
   };
 
-  // Load chat sessions from Supabase on mount
+  // Load chat sessions from Supabase and keys from localStorage on mount
   useEffect(() => {
     fetchSessions();
+    if (typeof window !== "undefined") {
+      const savedPineconeKey = localStorage.getItem("pineconeKey");
+      const savedOpenaiKey = localStorage.getItem("openaiKey");
+      if (savedPineconeKey) setPineconeKey(savedPineconeKey);
+      if (savedOpenaiKey) setOpenaiApiKey(savedOpenaiKey);
+    }
   }, []);
 
   const handleSelectSession = async (sid: string) => {
@@ -173,7 +180,11 @@ export default function Home() {
       const response = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: textToSend })
+        body: JSON.stringify({
+          query: textToSend,
+          pineconeApiKey: pineconeKey || undefined,
+          openaiApiKey: openaiApiKey || undefined
+        })
       });
 
       if (!response.ok) {
@@ -232,7 +243,11 @@ export default function Home() {
     
     try {
       const response = await fetch("/api/index", {
-        method: "POST"
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pineconeApiKey: pineconeKey || undefined
+        })
       });
 
       const result = await response.json();
@@ -252,6 +267,10 @@ export default function Home() {
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
+    if (typeof window !== "undefined") {
+      localStorage.setItem("pineconeKey", pineconeKey);
+      localStorage.setItem("openaiKey", openaiApiKey);
+    }
     setIsSettingsSaved(true);
   };
 
@@ -741,6 +760,21 @@ export default function Home() {
               </button>
             </div>
             <span className={styles.formHint}>입력된 키는 벡엔드 파인콘 인덱스 벡터 검색 호출 시 활용됩니다.</span>
+          </div>
+
+          {/* OpenAI API key */}
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>OpenAI API Key</label>
+            <div className={styles.apiKeyInputContainer}>
+              <input
+                type={showApiKey ? "text" : "password"}
+                value={openaiApiKey}
+                onChange={(e) => setOpenaiApiKey(e.target.value)}
+                className={styles.formInput}
+                placeholder="OpenAI API Key를 입력하세요 (미입력시 서버 .env 값 사용)"
+              />
+            </div>
+            <span className={styles.formHint}>입력된 키는 백엔드 OpenAI(gpt-5-nano) 호출 시 활용됩니다.</span>
           </div>
 
           {/* Database Index Name */}

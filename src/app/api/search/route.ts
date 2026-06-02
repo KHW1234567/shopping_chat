@@ -63,7 +63,7 @@ function parseCSV(csvText: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { query } = await req.json();
+    const { query, pineconeApiKey, openaiApiKey } = await req.json();
     
     if (!query || typeof query !== "string") {
       return NextResponse.json(
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.PINECONE_API_KEY;
+    const apiKey = pineconeApiKey || process.env.PINECONE_API_KEY;
     const host = process.env.PINECONE_HOST;
 
     if (!apiKey) {
@@ -196,7 +196,7 @@ export async function POST(req: NextRequest) {
     const positivePct = Math.round((positiveCount / results.length) * 100);
 
     // 5. Generate RAG Answer text using OpenAI gpt-5-nano via LangChain
-    const openAIApiKey = process.env.OPENAI_API_KEY || process.env.openai_api_key;
+    const openAIApiKey = openaiApiKey || process.env.OPENAI_API_KEY || process.env.openai_api_key;
     if (!openAIApiKey) {
       return NextResponse.json(
         { error: "OPENAI_API_KEY is not configured in the server environment (.env)." },

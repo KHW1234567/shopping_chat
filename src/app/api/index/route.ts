@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { PineconeStore } from "@langchain/pinecone";
 import { Document } from "@langchain/core/documents";
@@ -59,9 +59,11 @@ function parseCSV(csvText: string) {
   return results;
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.PINECONE_API_KEY;
+    const body = await req.json().catch(() => ({}));
+    const { pineconeApiKey } = body;
+    const apiKey = pineconeApiKey || process.env.PINECONE_API_KEY;
     const host = process.env.PINECONE_HOST;
     
     if (!apiKey) {
